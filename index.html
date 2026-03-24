@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Dealer Intelligence SA</title>
+
+<style>
+body { font-family: 'Segoe UI', Arial; background:#0b1220; color:#e2e8f0; margin:0; }
+.navbar { background:#020617; padding:15px 30px; display:flex; justify-content:space-between; }
+.nav-links a { margin-left:20px; cursor:pointer; font-weight:600; }
+.container { max-width:1100px; margin:auto; padding:30px; }
+.card { background:#1e293b; padding:20px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 20px rgba(0,0,0,0.3);} 
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:15px; }
+input,select,button { width:100%; padding:10px; margin-top:8px; border-radius:6px; border:none; }
+button { background:linear-gradient(90deg,#22c55e,#16a34a); color:white; font-weight:bold; cursor:pointer; }
+.metric { background:#020617; padding:15px; border-radius:10px; text-align:center; }
+.result { margin-top:20px; padding:15px; background:#020617; border-radius:10px; }
+.hidden{display:none;}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+<div><b>🚗 Dealer AI</b></div>
+<div class="nav-links">
+<a onclick="showPage('home')">Home</a>
+<a onclick="showPage('analyzer')">Analyzer</a>
+<a onclick="showPage('inventory')">Inventory</a>
+<a onclick="showPage('about')">About</a>
+<a onclick="showPage('disclaimer')">Disclaimer</a>
+</div>
+</div>
+
+<div class="container">
+
+<!-- HOME -->
+<div id="home">
+<h1>Dashboard</h1>
+<div class="grid">
+<div class="metric"><h3 id="totalCars">0</h3><p>Vehicles</p></div>
+<div class="metric"><h3 id="avgProfit">R 0</h3><p>Avg Profit</p></div>
+<div class="metric"><h3 id="bestDeal">R 0</h3><p>Best Deal</p></div>
+<div class="metric"><h3 id="fastSales">0</h3><p>Fast Sellers</p></div>
+</div>
+</div>
+
+<!-- ANALYZER -->
+<div id="analyzer" class="hidden">
+<div class="card">
+<h2>Vehicle Analyzer</h2>
+<div class="grid">
+<select id="manufacturer"><option>toyota</option><option>ford</option><option>bmw</option><option>audi</option></select>
+<select id="condition"><option>excellent</option><option>good</option><option>fair</option></select>
+<select id="fuel"><option>gas</option><option>diesel</option><option>hybrid</option></select>
+<select id="transmission"><option>automatic</option><option>manual</option></select>
+<select id="drive"><option>fwd</option><option>rwd</option><option>4wd</option></select>
+<select id="type"><option>sedan</option><option>suv</option><option>pickup</option></select>
+<input type="number" id="year" value="2020">
+<input type="number" id="odometer" value="40000">
+<input type="number" id="price" value="200000">
+</div>
+<button id="analyzeBtn">Analyze Deal</button>
+<div id="result" class="result"></div>
+</div>
+</div>
+
+<!-- INVENTORY -->
+<div id="inventory" class="hidden">
+<div class="card">
+<h2>Inventory Upload</h2>
+<input type="file" id="csvFile">
+<button onclick="uploadInventory()">Analyze Inventory</button>
+<button onclick="downloadCSV()">⬇️ Download Results</button>
+<div id="inventoryResult" class="result"></div>
+</div>
+</div>
+
+<!-- ABOUT -->
+<div id="about" class="hidden">
+<div class="card">
+<h2>About AI Dealer Intelligence SA</h2>
+<p>This platform is a machine learning-powered dealership intelligence system designed for the South African automotive market.</p>
+<ul>
+<li>Predicts vehicle resale value</li>
+<li>Estimates potential profit</li>
+<li>Analyzes selling speed</li>
+<li>Helps dealers make smarter buying decisions</li>
+</ul>
+<p>Built as a decision-support system — not a replacement for human expertise.</p>
+</div>
+</div>
+
+<!-- DISCLAIMER -->
+<div id="disclaimer" class="hidden">
+<div class="card">
+<h2>Disclaimer</h2>
+<p>This system provides AI-generated predictions and insights.</p>
+<ul>
+<li>Not financial advice</li>
+<li>No guarantee of profit</li>
+<li>Market conditions may vary</li>
+</ul>
+<p>The developers are not liable for any financial losses incurred.</p>
+</div>
+</div>
+
+</div>
+
+<script>
+let inventoryData = [];
+
+function showPage(page){
+ document.querySelectorAll('.container > div').forEach(d=>d.classList.add('hidden'));
+ document.getElementById(page).classList.remove('hidden');
+}
+
+document.getElementById("analyzeBtn").addEventListener("click", analyze);
+
+async function analyze(){
+ const data={manufacturer:manufacturer.value,condition:condition.value,fuel:fuel.value,transmission:transmission.value,drive:drive.value,type:type.value,year:+year.value,odometer:+odometer.value,price:+price.value};
+ const res=await fetch("http://127.0.0.1:8000/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+ const r=await res.json();
+ result.innerHTML=`<h3>Results</h3><p>💰 R ${r.predicted_price}</p><p>📈 R ${r.profit}</p><p>⚡ ${r.sell_speed}</p><p>${r.deal_rating}</p>`;
+}
+
+async function uploadInventory(){
+ const file=document.getElementById("csvFile").files[0];
+ const text=await file.text();
+ const rows=text.split("\n").map(r=>r.split(","));
+ const headers=rows[0].map(h=>h.trim().toLowerCase());
+
+ const data=rows.slice(1).filter(r=>r.length>1).map(row=>{
+  let obj={};
+  headers.forEach((h,i)=>obj[h]=row[i]);
+  obj.year=+obj.year; obj.odometer=+obj.odometer; obj.price=+obj.price;
+  return obj;
+ });
+
+ const res=await fetch("http://127.0.0.1:8000/inventory",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+ inventoryData=await res.json();
+
+ inventoryResult.innerHTML="Loaded "+inventoryData.length+" vehicles";
+ updateDashboard(inventoryData);
+}
+
+function updateDashboard(data){
+ totalCars.innerText=data.length;
+ let profits=data.map(d=>d.potential_profit);
+ let avg=profits.reduce((a,b)=>a+b,0)/profits.length;
+ let max=Math.max(...profits);
+ let fast=data.filter(d=>d.sell_speed=="FAST").length;
+ avgProfit.innerText="R "+avg.toFixed(0);
+ bestDeal.innerText="R "+max.toFixed(0);
+ fastSales.innerText=fast;
+}
+
+function downloadCSV(){
+ if(!inventoryData.length){alert("No data");return;}
+ const keys=Object.keys(inventoryData[0]);
+ const rows=[keys.join(",")];
+ inventoryData.forEach(obj=>{
+  rows.push(keys.map(k=>obj[k]).join(","));
+ });
+ const blob=new Blob([rows.join("\n")],{type:"text/csv"});
+ const link=document.createElement("a");
+ link.href=URL.createObjectURL(blob);
+ link.download="dealer_inventory_results.csv";
+ link.click();
+}
+
+</script>
+
+</body>
+</html>
