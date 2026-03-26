@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
@@ -29,25 +29,34 @@ def root():
 EXCHANGE_RATE = 18
 
 # -----------------------------
-# MODEL DOWNLOAD LINKS (FIXED)
+# MODEL LINKS
 # -----------------------------
 PRICE_MODEL_URL = "https://drive.google.com/uc?export=download&id=11b8EYK2lhqNI0KCvceh-_BpNtyQ3poTk"
 SPEED_MODEL_URL = "https://drive.google.com/uc?export=download&id=19eOVHDOqWFCi-U_vfKvAEEplQmhgqFFq"
 COLUMNS_URL = "https://drive.google.com/uc?export=download&id=1juBiA4Zaoh6FLrbMayZYVaxY63CjHLQ8"
 
 # -----------------------------
-# DOWNLOAD FUNCTION
+# SAFE DOWNLOAD
 # -----------------------------
 def download_file(url, filename):
     if not os.path.exists(filename):
-        print(f"Downloading {filename}...")
-        r = requests.get(url)
-        with open(filename, "wb") as f:
-            f.write(r.content)
-        print(f"{filename} downloaded.")
+        try:
+            print(f"Downloading {filename}...")
+            r = requests.get(url, timeout=30)
+            if r.status_code != 200:
+                raise Exception("Download failed")
+
+            with open(filename, "wb") as f:
+                f.write(r.content)
+
+            print(f"{filename} downloaded.")
+
+        except Exception as e:
+            print(f"ERROR downloading {filename}: {e}")
+            raise HTTPException(status_code=500, detail=f"Model download failed: {filename}")
 
 # -----------------------------
-# LOAD MODELS (SMART CACHE)
+# LOAD MODELS
 # -----------------------------
 price_model = None
 speed_model = None
@@ -61,9 +70,12 @@ def load_models():
         download_file(SPEED_MODEL_URL, "speed_model.pkl")
         download_file(COLUMNS_URL, "model_columns.pkl")
 
-        price_model = joblib.load("car_price_model.pkl")
-        speed_model = joblib.load("speed_model.pkl")
-        model_columns = joblib.load("model_columns.pkl")
+        try:
+            price_model = joblib.load("car_price_model.pkl")
+            speed_model = joblib.load("speed_model.pkl")
+            model_columns = joblib.load("model_columns.pkl")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Model loading failed: {str(e)}")
 
     return price_model, speed_model, model_columns
 
@@ -85,99 +97,76 @@ class Vehicle(BaseModel):
 # FEATURE BUILDER
 # -----------------------------
 def build_price_features(df, model_columns):
-
     X = pd.DataFrame(0, index=df.index, columns=model_columns)
 
     for col in ["year", "odometer", "car_age"]:
         if col in df:
             X[col] = df[col]
 
-    categorical = [
-        "manufacturer",
-        "condition",
-        "fuel",
-        "transmission",
-        "drive",
-        "type"
-    ]
+    categorical = ["manufacturer","condition","fuel","transmission","drive","type"]
 
     for col in categorical:
-        if col in df:
-            for i, val in df[col].items():
-                val = str(val).strip().lower()
-                feature = f"{col}_{val}"
-                if feature in X.columns:
-                    X.at[i, feature] = 1
+        for i, val in df[col].items():
+            val = str(val).strip().lower()
+            feature = f"{col}_{val}"
+            if feature in X.columns:
+                X.at[i, feature] = 1
 
     return X
 
 # -----------------------------
-# VEHICLE ANALYZER API
+# ANALYZE
 # -----------------------------
 @app.post("/analyze")
 def analyze_vehicle(data: Vehicle):
+    try:
+        price_model, speed_model, model_columns = load_models()
 
-    price_model, speed_model, model_columns = load_models()
+        df = pd.DataFrame([data.dict()])
+        df["car_age"] = datetime.now().year - df["year"]
 
-    df = pd.DataFrame([data.dict()])
-    df["car_age"] = datetime.now().year - df["year"]
+        price_input = build_price_features(df, model_columns)
 
-    price_input = build_price_features(df, model_columns)
+        predicted_price = price_model.predict(price_input)[0] * EXCHANGE_RATE
+        sell_speed = speed_model.predict(df[["year","odometer","car_age"]])[0]
 
-    predicted_price = price_model.predict(price_input)[0] * EXCHANGE_RATE
-    sell_speed = speed_model.predict(df[["year","odometer","car_age"]])[0]
+        profit = predicted_price - data.price
 
-    profit = predicted_price - data.price
+        if profit > 50000:
+            deal_rating = "🔥 Great Deal"
+        elif profit > 10000:
+            deal_rating = "⚠️ Fair Deal"
+        else:
+            deal_rating = "❌ Bad Deal"
 
-    if profit > 50000:
-        deal_rating = "🔥 Great Deal"
-    elif profit > 10000:
-        deal_rating = "⚠️ Fair Deal"
-    else:
-        deal_rating = "❌ Bad Deal"
+        return {
+            "predicted_price": round(predicted_price,2),
+            "profit": round(profit,2),
+            "sell_speed": str(sell_speed),
+            "deal_rating": deal_rating
+        }
 
-    return {
-        "predicted_price": round(predicted_price,2),
-        "profit": round(profit,2),
-        "sell_speed": str(sell_speed),
-        "deal_rating": deal_rating
-    }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # -----------------------------
-# INVENTORY ANALYZER API
+# INVENTORY
 # -----------------------------
 @app.post("/inventory")
 def analyze_inventory(data: List[Vehicle]):
+    try:
+        price_model, speed_model, model_columns = load_models()
 
-    price_model, speed_model, model_columns = load_models()
+        df = pd.DataFrame([d.dict() for d in data])
+        df["car_age"] = datetime.now().year - df["year"]
 
-    df = pd.DataFrame([d.dict() for d in data])
-    df["car_age"] = datetime.now().year - df["year"]
+        price_input = build_price_features(df, model_columns)
 
-    price_input = build_price_features(df, model_columns)
+        df["predicted_price"] = price_model.predict(price_input) * EXCHANGE_RATE
+        df["sell_speed"] = speed_model.predict(df[["year","odometer","car_age"]])
+        df["potential_profit"] = df["predicted_price"] - df["price"]
 
-    df["predicted_price"] = price_model.predict(price_input) * EXCHANGE_RATE
-    df["sell_speed"] = speed_model.predict(df[["year","odometer","car_age"]])
-    df["potential_profit"] = df["predicted_price"] - df["price"]
+        return df.to_dict(orient="records")
 
-    return df.to_dict(orient="records")
-
-# -----------------------------
-# MARKET SCANNER API
-# -----------------------------
-@app.post("/market")
-def market_scan(data: List[Vehicle]):
-
-    price_model, speed_model, model_columns = load_models()
-
-    df = pd.DataFrame([d.dict() for d in data])
-    df["car_age"] = datetime.now().year - df["year"]
-
-    price_input = build_price_features(df, model_columns)
-
-    df["predicted_price"] = price_model.predict(price_input) * EXCHANGE_RATE
-    df["undervalue"] = df["predicted_price"] - df["price"]
-
-    df = df.sort_values("undervalue", ascending=False)
-
-    return df.to_dict(orient="records")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
