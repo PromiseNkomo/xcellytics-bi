@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 import joblib
 import pandas as pd
 import shap
 import sqlite3
 from datetime import datetime
+import io
 
 app = FastAPI(title="ZimCred AI Engine")
 
@@ -19,7 +20,7 @@ medians = engine["medians"]
 explainer = shap.TreeExplainer(model)
 
 # -----------------------------
-# Database Setup (SQLite Bureau)
+# Database Setup
 # -----------------------------
 conn = sqlite3.connect("zimcred.db", check_same_thread=False)
 cursor = conn.cursor()
@@ -50,7 +51,7 @@ class ApplicantRequest(BaseModel):
     dependents: int
 
 # -----------------------------
-# Utility: Build Model Row
+# Build Model Row
 # -----------------------------
 def build_applicant_row(real_input):
     row = {col: medians.get(col, 0) for col in feature_columns}
@@ -58,7 +59,7 @@ def build_applicant_row(real_input):
     return pd.DataFrame([row])
 
 # -----------------------------
-# Core Scoring Logic
+# Scoring Logic
 # -----------------------------
 def zimcred_score(applicant_df):
 
@@ -83,7 +84,7 @@ def zimcred_score(applicant_df):
     return prob, credit_score, band, recommended_limit
 
 # -----------------------------
-# API Endpoint
+# SINGLE SCORING
 # -----------------------------
 @app.post("/score")
 def score_applicant(applicant: ApplicantRequest):
@@ -99,7 +100,7 @@ def score_applicant(applicant: ApplicantRequest):
 
     prob, credit_score, band, recommended_limit = zimcred_score(applicant_df)
 
-    # 🔥 Log decision to bureau database
+    # Save to DB
     cursor.execute("""
     INSERT INTO credit_decisions (
         timestamp,
@@ -133,7 +134,47 @@ def score_applicant(applicant: ApplicantRequest):
     }
 
 # -----------------------------
-# Decision History Endpoint
+# 🚀 BULK SCORING (NEW)
+# -----------------------------
+@app.post("/bulk-score")
+async def bulk_score(file: UploadFile = File(...)):
+
+    contents = await file.read()
+    df = pd.read_csv(io.BytesIO(contents))
+
+    results = []
+
+    for _, row in df.iterrows():
+
+        applicant = {
+            "AMT_INCOME_TOTAL": row["monthly_income"] * 12,
+            "AMT_CREDIT": row["requested_loan_amount"],
+            "AMT_ANNUITY": row["monthly_expenses"],
+            "CNT_CHILDREN": row["dependents"]
+        }
+
+        applicant_df = build_applicant_row(applicant)
+
+        prob, score, band, limit = zimcred_score(applicant_df)
+
+        results.append({
+            "monthly_income": row["monthly_income"],
+            "requested_loan_amount": row["requested_loan_amount"],
+            "monthly_expenses": row["monthly_expenses"],
+            "dependents": row["dependents"],
+            "Probability_of_Default": round(float(prob), 4),
+            "Credit_Score": score,
+            "Risk_Band": band,
+            "Recommended_Loan_Limit": limit
+        })
+
+    return {
+        "results": results,
+        "total_processed": len(results)
+    }
+
+# -----------------------------
+# HISTORY
 # -----------------------------
 @app.get("/history")
 def get_history():
@@ -152,7 +193,7 @@ def get_history():
     return {"Recent_Decisions": results}
 
 # -----------------------------
-# Health Check
+# HEALTH
 # -----------------------------
 @app.get("/health")
 def health_check():
