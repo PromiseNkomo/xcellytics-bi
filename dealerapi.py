@@ -19,9 +19,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -----------------------------
-# HEALTH CHECK
-# -----------------------------
 @app.get("/")
 def root():
     return {"status": "API is running"}
@@ -29,53 +26,67 @@ def root():
 EXCHANGE_RATE = 18
 
 # -----------------------------
-# MODEL LINKS
+# GOOGLE DRIVE FILE IDS
 # -----------------------------
-PRICE_MODEL_URL = "https://drive.google.com/uc?export=download&id=11b8EYK2lhqNI0KCvceh-_BpNtyQ3poTk"
-SPEED_MODEL_URL = "https://drive.google.com/uc?export=download&id=19eOVHDOqWFCi-U_vfKvAEEplQmhgqFFq"
-COLUMNS_URL = "https://drive.google.com/uc?export=download&id=1juBiA4Zaoh6FLrbMayZYVaxY63CjHLQ8"
-
-# -----------------------------
-# SAFE DOWNLOAD
-# -----------------------------
-def download_file(url, filename):
-    if not os.path.exists(filename):
-        try:
-            print(f"Downloading {filename}...")
-            r = requests.get(url, timeout=30)
-            if r.status_code != 200:
-                raise Exception("Download failed")
-
-            with open(filename, "wb") as f:
-                f.write(r.content)
-
-            print(f"{filename} downloaded.")
-
-        except Exception as e:
-            print(f"ERROR downloading {filename}: {e}")
-            raise HTTPException(status_code=500, detail=f"Model download failed: {filename}")
+PRICE_MODEL_ID = "11b8EYK2lhqNI0KCvceh-_BpNtyQ3poTk"
+SPEED_MODEL_ID = "19eOVHDOqWFCi-U_vfKvAEEplQmhgqFFq"
+COLUMNS_MODEL_ID = "1juBiA4Zaoh6FLrbMayZYVaxY63CjHLQ8"
 
 # -----------------------------
-# LOAD MODELS
+# SAFE DOWNLOAD FUNCTION 🔥
 # -----------------------------
-price_model = None
-speed_model = None
-model_columns = None
+def download_file(file_id, filename):
 
+    if os.path.exists(filename):
+        print(f"{filename} already exists, skipping download.")
+        return
+
+    print(f"⬇️ Downloading {filename}...")
+
+    URL = "https://drive.google.com/uc?export=download"
+    session = requests.Session()
+
+    response = session.get(URL, params={"id": file_id}, stream=True)
+
+    # Handle large file warning
+    for key, value in response.cookies.items():
+        if key.startswith("download_warning"):
+            response = session.get(
+                URL,
+                params={"id": file_id, "confirm": value},
+                stream=True
+            )
+
+    with open(filename, "wb") as f:
+        for chunk in response.iter_content(8192):
+            if chunk:
+                f.write(chunk)
+
+    # 🔥 VALIDATION (VERY IMPORTANT)
+    if os.path.getsize(filename) < 1000000:  # <1MB = broken
+        raise Exception(f"{filename} download failed or incomplete!")
+
+    print(f"✅ {filename} downloaded successfully.")
+
+# -----------------------------
+# LOAD MODELS (SAFE)
+# -----------------------------
 def load_models():
     global price_model, speed_model, model_columns
 
-    if price_model is None:
-        download_file(PRICE_MODEL_URL, "car_price_model.pkl")
-        download_file(SPEED_MODEL_URL, "speed_model.pkl")
-        download_file(COLUMNS_URL, "model_columns.pkl")
+    if "price_model" not in globals():
 
-        try:
-            price_model = joblib.load("car_price_model.pkl")
-            speed_model = joblib.load("speed_model.pkl")
-            model_columns = joblib.load("model_columns.pkl")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Model loading failed: {str(e)}")
+        print("🚀 Loading models...")
+
+        download_file(PRICE_MODEL_ID, "car_price_model.pkl")
+        download_file(SPEED_MODEL_ID, "speed_model.pkl")
+        download_file(COLUMNS_MODEL_ID, "model_columns.pkl")
+
+        price_model = joblib.load("car_price_model.pkl")
+        speed_model = joblib.load("speed_model.pkl")
+        model_columns = joblib.load("model_columns.pkl")
+
+        print("✅ Models loaded!")
 
     return price_model, speed_model, model_columns
 
@@ -97,28 +108,27 @@ class Vehicle(BaseModel):
 # FEATURE BUILDER
 # -----------------------------
 def build_price_features(df, model_columns):
+
     X = pd.DataFrame(0, index=df.index, columns=model_columns)
 
-    for col in ["year", "odometer", "car_age"]:
-        if col in df:
-            X[col] = df[col]
+    X["year"] = df["year"]
+    X["odometer"] = df["odometer"]
+    X["car_age"] = df["car_age"]
 
-    categorical = ["manufacturer","condition","fuel","transmission","drive","type"]
-
-    for col in categorical:
+    for col in ["manufacturer","condition","fuel","transmission","drive","type"]:
         for i, val in df[col].items():
-            val = str(val).strip().lower()
-            feature = f"{col}_{val}"
+            feature = f"{col}_{str(val).lower()}"
             if feature in X.columns:
-                X.at[i, feature] = 1
+                X.loc[i, feature] = 1
 
-    return X
+    return X[model_columns]
 
 # -----------------------------
 # ANALYZE
 # -----------------------------
 @app.post("/analyze")
 def analyze_vehicle(data: Vehicle):
+
     try:
         price_model, speed_model, model_columns = load_models()
 
@@ -128,7 +138,9 @@ def analyze_vehicle(data: Vehicle):
         price_input = build_price_features(df, model_columns)
 
         predicted_price = price_model.predict(price_input)[0] * EXCHANGE_RATE
-        sell_speed = speed_model.predict(df[["year","odometer","car_age"]])[0]
+
+        speed_input = df[["year","odometer","car_age"]]
+        sell_speed = speed_model.predict(speed_input)[0]
 
         profit = predicted_price - data.price
 
@@ -147,13 +159,15 @@ def analyze_vehicle(data: Vehicle):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print("❌ ERROR:", str(e))
+        return {"error": str(e)}
 
 # -----------------------------
 # INVENTORY
 # -----------------------------
 @app.post("/inventory")
 def analyze_inventory(data: List[Vehicle]):
+
     try:
         price_model, speed_model, model_columns = load_models()
 
@@ -169,4 +183,5 @@ def analyze_inventory(data: List[Vehicle]):
         return df.to_dict(orient="records")
 
     except Exception as e:
+        print("❌ ERROR:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
