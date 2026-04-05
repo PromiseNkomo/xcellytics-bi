@@ -46,28 +46,39 @@ def download_file(file_id, filename):
     URL = "https://drive.google.com/uc?export=download"
     session = requests.Session()
 
-    response = session.get(URL, params={"id": file_id}, stream=True)
+    try:
+        response = session.get(URL, params={"id": file_id}, stream=True, timeout=60)
 
-    # Handle large file confirmation
-    for key, value in response.cookies.items():
-        if key.startswith("download_warning"):
-            response = session.get(
-                URL,
-                params={"id": file_id, "confirm": value},
-                stream=True
-            )
+        # ❗ Check if request failed
+        if response.status_code != 200:
+            raise Exception(f"Failed to download {filename} (status {response.status_code})")
 
-    with open(filename, "wb") as f:
-        for chunk in response.iter_content(8192):
-            if chunk:
-                f.write(chunk)
+        # Handle large file confirmation
+        for key, value in response.cookies.items():
+            if key.startswith("download_warning"):
+                response = session.get(
+                    URL,
+                    params={"id": file_id, "confirm": value},
+                    stream=True,
+                    timeout=60
+                )
 
-    # 🔥 VALIDATION (CRITICAL FIX)
-    if os.path.getsize(filename) < 500000:  # <500KB = broken
-        os.remove(filename)
-        raise Exception(f"{filename} download failed or incomplete!")
+        with open(filename, "wb") as f:
+            for chunk in response.iter_content(8192):
+                if chunk:
+                    f.write(chunk)
 
-    print(f"✅ {filename} downloaded successfully")
+        # ✅ VALIDATION
+        if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+            raise Exception(f"{filename} download failed!")
+
+        print(f"✅ {filename} downloaded successfully")
+
+    except Exception as e:
+        # ❗ Delete broken file if exists
+        if os.path.exists(filename):
+            os.remove(filename)
+        raise Exception(str(e))
 
 # -----------------------------
 # LOAD MODELS (LAZY LOAD 🔥)
