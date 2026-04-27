@@ -4,222 +4,385 @@
 <meta charset="UTF-8">
 <title>DealerNexus AI</title>
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
 <style>
-body { font-family: 'Segoe UI', Arial; background:#0b1220; color:#e2e8f0; margin:0; }
+body {
+    font-family:'Inter', sans-serif;
+    background:#0b1220;
+    color:#e2e8f0;
+    margin:0;
+}
 
-.navbar { 
-    background:#020617; 
-    padding:15px 30px; 
-    display:flex; 
-    justify-content:space-between; 
+/* NAVBAR */
+.navbar {
+    background:#020617;
+    padding:18px 24px;
+    display:flex;
+    justify-content:space-between;
     align-items:center;
+    border-bottom:1px solid #1e293b;
+}
+.logo {
+    font-size:20px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.logo span {
+    letter-spacing:0.5px;
 }
 
-.nav-links a { 
-    margin-left:20px; 
-    cursor:pointer; 
-    font-weight:600; 
+/* SIDEBAR */
+.sidebar {
+    position:fixed;
+    top:0;
+    left:-260px;
+    width:260px;
+    height:100%;
+    background:#020617;
+    padding:20px;
+    transition:0.3s;
+}
+.sidebar a, .sidebar button {
+    display:block;
+    padding:12px;
+    margin:8px 0;
+    cursor:pointer;
     color:white;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+}
+.sidebar.active { left:0; }
+
+.container { max-width:1100px; margin:auto; padding:20px; }
+
+.hero { text-align:center; padding:80px 20px; }
+.hero h1 { font-size:40px; margin-bottom:10px; }
+
+.card {
+    background:#1e293b;
+    padding:24px;
+    border-radius:14px;
+    margin-bottom:20px;
 }
 
-.container { max-width:1100px; margin:auto; padding:30px; }
-
-.card { 
-    background:#1e293b; 
-    padding:20px; 
-    border-radius:12px; 
-    margin-bottom:20px; 
+input,button {
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border-radius:8px;
+    border:none;
 }
 
-.grid { 
-    display:grid; 
-    grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); 
-    gap:15px; 
+button {
+    background:linear-gradient(90deg,#22c55e,#16a34a);
+    color:white;
+    font-weight:600;
+    cursor:pointer;
 }
 
-input,select,button { 
-    width:100%; 
-    padding:10px; 
-    margin-top:8px; 
-    border-radius:6px; 
-    border:none; 
+button:disabled {
+    background:#475569;
 }
 
-button { 
-    background:linear-gradient(90deg,#22c55e,#16a34a); 
-    color:white; 
-    font-weight:bold; 
-    cursor:pointer; 
-}
-
-.metric { 
-    background:#020617; 
-    padding:15px; 
-    border-radius:10px; 
-    text-align:center; 
-}
-
-.result { 
-    margin-top:20px; 
-    padding:15px; 
-    background:#020617; 
-    border-radius:10px; 
+.result {
+    margin-top:20px;
+    padding:15px;
+    background:#020617;
+    border-radius:10px;
 }
 
 .hidden { display:none; }
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
+td, th {
+    border:1px solid #334155;
+    padding:8px;
+    text-align:center;
+}
+
+.profit-positive { background:#064e3b; }
+.profit-negative { background:#7f1d1d; }
+
+.signal-buy { color:#22c55e; font-weight:bold; }
+.signal-avoid { color:#ef4444; font-weight:bold; }
+
+.logout-btn { background:#ef4444; }
+
+.loader {
+    margin-top:10px;
+    font-size:14px;
+    color:#94a3b8;
+}
 </style>
 </head>
 
 <body>
 
+<div id="sidebar" class="sidebar">
+<a onclick="showPage('landing');toggleMenu()">🏠 Home</a>
+<a onclick="showPage('dashboard');toggleMenu()">📊 Dashboard</a>
+<a onclick="showPage('analyzer');toggleMenu()">🔍 Analyzer</a>
+<a onclick="showPage('inventory');toggleMenu()">📦 Inventory</a>
+<a onclick="showPage('about');toggleMenu()">ℹ️ About</a>
+<a onclick="showPage('contact');toggleMenu()">📞 Contact</a>
+<a onclick="showPage('disclaimer');toggleMenu()">⚠ Disclaimer</a>
+<a onclick="showPage('auth');toggleMenu()">🔐 Login</a>
+<button class="logout-btn" onclick="logout()">🚪 Logout</button>
+</div>
+
 <div class="navbar">
-    <div><b>🚗 DealerNexus AI</b></div>
-    <div class="nav-links">
-        <a onclick="showPage('home')">Home</a>
-        <a onclick="showPage('analyzer')">Analyzer</a>
-        <a onclick="showPage('inventory')">Inventory</a>
-        <a onclick="showPage('about')">About</a>
-        <a onclick="showPage('disclaimer')">Disclaimer</a>
-    </div>
+<div class="logo">🚗 <span>DealerNexus AI</span></div>
+<div onclick="toggleMenu()">☰</div>
 </div>
 
 <div class="container">
 
-<!-- HOME -->
-<div id="home" class="page">
-<h1>Dashboard</h1>
-<div class="grid">
-<div class="metric"><h3 id="totalCars">0</h3><p>Vehicles</p></div>
-<div class="metric"><h3 id="avgProfit">R 0</h3><p>Avg Profit</p></div>
-<div class="metric"><h3 id="bestDeal">R 0</h3><p>Best Deal</p></div>
-<div class="metric"><h3 id="fastSales">0</h3><p>Fast Sellers</p></div>
+<div id="landing" class="page">
+<div class="hero">
+<h1>Stop Guessing Car Profits</h1>
+<p>AI predicts profitable vehicles before you buy.</p>
+<button onclick="showPage('auth')">🚀 Start Free</button>
 </div>
 </div>
 
-<!-- ANALYZER -->
+<div id="auth" class="page hidden">
+<div class="card">
+<h2>Login / Signup</h2>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="signup()">Signup</button>
+<button onclick="login()">Login</button>
+<div id="authResult" class="result"></div>
+</div>
+</div>
+
+<div id="dashboard" class="page hidden">
+<div class="card">
+<b>Plan:</b> <span id="userPlan"></span><br>
+<b>Usage:</b> <span id="userUsage"></span><br>
+<b>Expiry:</b> <span id="userExpiry"></span>
+</div>
+</div>
+
 <div id="analyzer" class="page hidden">
 <div class="card">
 <h2>Vehicle Analyzer</h2>
 
-<div class="grid">
-<select id="manufacturer"><option>toyota</option><option>ford</option><option>bmw</option><option>audi</option></select>
-<select id="condition"><option>excellent</option><option>good</option><option>fair</option></select>
-<select id="fuel"><option>gas</option><option>diesel</option><option>hybrid</option></select>
-<select id="transmission"><option>automatic</option><option>manual</option></select>
-<select id="drive"><option>fwd</option><option>rwd</option><option>4wd</option></select>
-<select id="type"><option>sedan</option><option>suv</option><option>pickup</option></select>
+<input id="manufacturer" placeholder="Manufacturer">
+<input id="condition" placeholder="Condition">
+<input id="fuel" placeholder="Fuel">
+<input id="transmission" placeholder="Transmission">
+<input id="drive" placeholder="Drive">
+<input id="type" placeholder="Type">
+<input type="number" id="year" placeholder="Year">
+<input type="number" id="odometer" placeholder="Mileage">
+<input type="number" id="price" placeholder="Price">
 
-<input type="number" id="year" value="2020">
-<input type="number" id="odometer" value="40000">
-<input type="number" id="price" value="200000">
-</div>
-
-<button onclick="analyze()">Analyze Deal</button>
-
+<button id="analyzeBtn" onclick="analyze()">Analyze</button>
 <div id="result" class="result"></div>
+<div id="analyzeLoader" class="loader hidden">⏳ Processing...</div>
 </div>
 </div>
 
-<!-- INVENTORY -->
 <div id="inventory" class="page hidden">
 <div class="card">
 <h2>Inventory Upload</h2>
 
 <input type="file" id="csvFile">
-<button onclick="uploadInventory()">Analyze Inventory</button>
-<button onclick="downloadCSV()">⬇️ Download Results</button>
 
+<button onclick="downloadTemplate()">⬇ Download CSV Template</button>
+<button id="inventoryBtn" onclick="uploadInventory()">Analyze Inventory</button>
+<button onclick="downloadCSV()">⬇ Download Results</button>
+
+<div id="inventoryLoader" class="loader hidden">⏳ Processing...</div>
 <div id="inventoryResult" class="result"></div>
 </div>
 </div>
 
-<!-- ABOUT -->
 <div id="about" class="page hidden">
 <div class="card">
 <h2>About DealerNexus AI</h2>
-<p>AI-powered dealership intelligence platform for South Africa.</p>
+<p>DealerNexus AI is an advanced analytics platform designed for automotive dealers and resellers. It uses machine learning models trained on vehicle market data to predict resale value, profit potential, and selling speed.</p>
+<p>Our goal is to eliminate guesswork in vehicle purchasing decisions and empower dealers with real-time intelligence.</p>
 </div>
 </div>
 
-<!-- DISCLAIMER -->
+<div id="contact" class="page hidden">
+<div class="card">
+<h2>Contact</h2>
+<p>Email: promisetnkomo@gmail.com</p>
+<p>Phone: +27623268794</p>
+</div>
+</div>
+
 <div id="disclaimer" class="page hidden">
 <div class="card">
 <h2>Disclaimer</h2>
-<p>Predictions are not guaranteed. Use professional judgment.</p>
+<p>DealerNexus AI provides predictions based on historical and statistical data. Results are estimates and should not be considered financial advice.</p>
+<p>Users are responsible for their own business decisions. DealerNexus AI is not liable for losses or decisions made based on system outputs.</p>
 </div>
 </div>
 
 </div>
 
 <script>
+const API = "http://127.0.0.1:8000";
+let inventoryResults = [];
 
-const API = "https://dealer-ai-api-1.onrender.com";
-let inventoryData = [];
-
-function showPage(pageId){
-    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-    document.getElementById(pageId).classList.remove('hidden');
+/* NAV */
+function toggleMenu(){ sidebar.classList.toggle("active"); }
+function showPage(p){
+    document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));
+    document.getElementById(p).classList.remove('hidden');
 }
 
+/* AUTH */
+function getToken(){ return localStorage.getItem("token"); }
+function setToken(t){ localStorage.setItem("token", t); }
+function logout(){ localStorage.removeItem("token"); showPage('landing'); }
+
+/* TEMPLATE */
+function downloadTemplate(){
+    let csv="manufacturer,condition,fuel,transmission,drive,type,year,odometer,price\nToyota,used,petrol,auto,fwd,sedan,2018,85000,150000";
+    let blob=new Blob([csv]);
+    let a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="template.csv";
+    a.click();
+}
+
+/* ANALYZE */
 async function analyze(){
+    analyzeLoader.classList.remove("hidden");
+    analyzeBtn.disabled=true;
 
-    const result = document.getElementById("result");
-    result.innerHTML = "⌛ Processing...";
+    const res = await fetch(API+"/analyze?token="+getToken(),{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            manufacturer:manufacturer.value,
+            condition:condition.value,
+            fuel:fuel.value,
+            transmission:transmission.value,
+            drive:drive.value,
+            type:type.value,
+            year:Number(year.value),
+            odometer:Number(odometer.value),
+            price:Number(price.value)
+        })
+    });
 
-    const data = {
-        manufacturer: document.getElementById("manufacturer").value,
-        condition: document.getElementById("condition").value,
-        fuel: document.getElementById("fuel").value,
-        transmission: document.getElementById("transmission").value,
-        drive: document.getElementById("drive").value,
-        type: document.getElementById("type").value,
-        year: Number(document.getElementById("year").value),
-        odometer: Number(document.getElementById("odometer").value),
-        price: Number(document.getElementById("price").value)
+    const r = await res.json();
+
+    analyzeLoader.classList.add("hidden");
+    analyzeBtn.disabled=false;
+
+    let signal = r.profit > 0 ? "BUY" : "AVOID";
+
+    result.innerHTML = `Profit: R ${r.profit}<br>Signal: <b class="${r.profit>0?'signal-buy':'signal-avoid'}">${signal}</b>`;
+}
+
+/* INVENTORY FIXED */
+async function uploadInventory(){
+
+    inventoryLoader.classList.remove("hidden");
+    inventoryBtn.disabled=true;
+
+    const file = csvFile.files[0];
+    if(!file){ alert("Upload CSV"); return; }
+
+    const text = await file.text();
+    const rows = text.split("\n").map(r=>r.split(","));
+    const headers = rows[0].map(h=>h.trim().toLowerCase());
+
+    const map = {
+        make:"manufacturer",
+        brand:"manufacturer",
+        mileage:"odometer"
     };
 
-    try{
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 30000);
+    let clean=[];
 
-        const res = await fetch(API + "/analyze", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify(data),
-            signal: controller.signal
+    rows.slice(1).forEach(r=>{
+        let obj={};
+
+        headers.forEach((h,i)=>{
+            let key = map[h] || h;
+            obj[key]=r[i]?.trim();
         });
 
-        const r = await res.json();
+        let year=Number(obj.year);
+        let odometer=Number(obj.odometer);
+        let price=Number(obj.price);
 
-        // 🔥 IMPORTANT: SHOW BACKEND ERRORS
-        if(r.error){
-            result.innerHTML = "❌ BACKEND ERROR: " + r.error;
-            return;
-        }
+        if(!year||!odometer||!price) return;
 
-        result.innerHTML = `
-        <h3>Results</h3>
-        <p>💰 Estimated Price: R ${r.predicted_price}</p>
-        <p>📈 Profit: R ${r.profit}</p>
-        <p>⚡ Sell Speed: ${r.sell_speed}</p>
-        <p><b>${r.deal_rating}</b></p>
-        `;
+        clean.push({
+            manufacturer:obj.manufacturer||"",
+            condition:obj.condition||"",
+            fuel:obj.fuel||"",
+            transmission:obj.transmission||"",
+            drive:obj.drive||"",
+            type:obj.type||"",
+            year,odometer,price
+        });
+    });
 
-    }catch(e){
-        result.innerHTML = "❌ API not responding (backend issue)";
-        console.error(e);
-    }
+    const res = await fetch(API+"/inventory?token="+getToken(),{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(clean)
+    });
+
+    const result = await res.json();
+
+    inventoryLoader.classList.add("hidden");
+    inventoryBtn.disabled=false;
+
+    inventoryResults=result;
+
+    let table="<table><tr>";
+    Object.keys(result[0]).forEach(k=>table+=`<th>${k}</th>`);
+    table+="<th>Signal</th></tr>";
+
+    result.forEach(r=>{
+        let signal=r.profit>0?"BUY":"AVOID";
+        table+=`<tr class="${r.profit>0?'profit-positive':'profit-negative'}">`;
+
+        Object.values(r).forEach(v=>table+=`<td>${v}</td>`);
+
+        table+=`<td class="${r.profit>0?'signal-buy':'signal-avoid'}">${signal}</td></tr>`;
+    });
+
+    inventoryResult.innerHTML=table;
 }
 
-/* INVENTORY FUNCTIONS (RESTORED) */
-async function uploadInventory(){
-    alert("Inventory feature still active (backend connected)");
-}
-
+/* DOWNLOAD */
 function downloadCSV(){
-    alert("Download ready when inventory is used");
+    let csv=Object.keys(inventoryResults[0]).join(",")+",signal\n";
+
+    inventoryResults.forEach(r=>{
+        let signal=r.profit>0?"BUY":"AVOID";
+        csv+=Object.values(r).join(",")+","+signal+"\n";
+    });
+
+    let blob=new Blob([csv]);
+    let a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="results.csv";
+    a.click();
 }
 
+window.onload=()=>showPage('landing');
 </script>
 
 </body>
