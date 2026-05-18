@@ -7,14 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
-body {
-    font-family:'Inter', sans-serif;
-    background:#0b1220;
-    color:#e2e8f0;
-    margin:0;
-}
+body { font-family:'Inter', sans-serif; background:#0b1220; color:#e2e8f0; margin:0; }
 
-/* NAVBAR */
 .navbar {
     background:#020617;
     padding:18px 24px;
@@ -23,18 +17,9 @@ body {
     align-items:center;
     border-bottom:1px solid #1e293b;
 }
-.logo {
-    font-size:20px;
-    font-weight:700;
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-.logo span {
-    letter-spacing:0.5px;
-}
 
-/* SIDEBAR */
+.logo { font-size:20px; font-weight:700; display:flex; align-items:center; gap:10px; }
+
 .sidebar {
     position:fixed;
     top:0;
@@ -61,7 +46,6 @@ body {
 .container { max-width:1100px; margin:auto; padding:20px; }
 
 .hero { text-align:center; padding:80px 20px; }
-.hero h1 { font-size:40px; margin-bottom:10px; }
 
 .card {
     background:#1e293b;
@@ -85,9 +69,7 @@ button {
     cursor:pointer;
 }
 
-button:disabled {
-    background:#475569;
-}
+.hidden { display:none; }
 
 .result {
     margin-top:20px;
@@ -96,32 +78,9 @@ button:disabled {
     border-radius:10px;
 }
 
-.hidden { display:none; }
-
-table {
-    width:100%;
-    border-collapse:collapse;
-    margin-top:15px;
-}
-td, th {
-    border:1px solid #334155;
-    padding:8px;
-    text-align:center;
-}
-
-.profit-positive { background:#064e3b; }
-.profit-negative { background:#7f1d1d; }
-
-.signal-buy { color:#22c55e; font-weight:bold; }
-.signal-avoid { color:#ef4444; font-weight:bold; }
+.loader { margin-top:10px; color:#94a3b8; }
 
 .logout-btn { background:#ef4444; }
-
-.loader {
-    margin-top:10px;
-    font-size:14px;
-    color:#94a3b8;
-}
 </style>
 </head>
 
@@ -140,12 +99,13 @@ td, th {
 </div>
 
 <div class="navbar">
-<div class="logo">🚗 <span>DealerNexus AI</span></div>
+<div class="logo">🚗 DealerNexus AI</div>
 <div onclick="toggleMenu()">☰</div>
 </div>
 
 <div class="container">
 
+<!-- LANDING -->
 <div id="landing" class="page">
 <div class="hero">
 <h1>Stop Guessing Car Profits</h1>
@@ -154,6 +114,7 @@ td, th {
 </div>
 </div>
 
+<!-- AUTH -->
 <div id="auth" class="page hidden">
 <div class="card">
 <h2>Login / Signup</h2>
@@ -165,6 +126,7 @@ td, th {
 </div>
 </div>
 
+<!-- DASHBOARD -->
 <div id="dashboard" class="page hidden">
 <div class="card">
 <b>Plan:</b> <span id="userPlan"></span><br>
@@ -173,26 +135,28 @@ td, th {
 </div>
 </div>
 
+<!-- ANALYZER (FIXED ONLY HERE) -->
 <div id="analyzer" class="page hidden">
 <div class="card">
 <h2>Vehicle Analyzer</h2>
 
-<input id="manufacturer" placeholder="Manufacturer">
-<input id="condition" placeholder="Condition">
-<input id="fuel" placeholder="Fuel">
-<input id="transmission" placeholder="Transmission">
-<input id="drive" placeholder="Drive">
-<input id="type" placeholder="Type">
-<input type="number" id="year" placeholder="Year">
-<input type="number" id="odometer" placeholder="Mileage">
-<input type="number" id="price" placeholder="Price">
+<input id="manufacturer" placeholder="Manufacturer (e.g. Toyota)">
+<input id="condition" placeholder="Condition (e.g. Used / New)">
+<input id="fuel" placeholder="Fuel Type (e.g. Petrol / Diesel)">
+<input id="transmission" placeholder="Transmission (e.g. Auto / Manual)">
+<input id="drive" placeholder="Drive (e.g. FWD / RWD / AWD)">
+<input id="type" placeholder="Vehicle Type (e.g. Sedan / SUV)">
+<input type="number" id="year" placeholder="Year (e.g. 2018)">
+<input type="number" id="odometer" placeholder="Mileage (e.g. 85000)">
+<input type="number" id="price" placeholder="Purchase Price (ZAR)">
 
-<button id="analyzeBtn" onclick="analyze()">Analyze</button>
-<div id="result" class="result"></div>
+<button onclick="analyze()">Analyze</button>
 <div id="analyzeLoader" class="loader hidden">⏳ Processing...</div>
+<div id="result" class="result"></div>
 </div>
 </div>
 
+<!-- INVENTORY -->
 <div id="inventory" class="page hidden">
 <div class="card">
 <h2>Inventory Upload</h2>
@@ -200,7 +164,7 @@ td, th {
 <input type="file" id="csvFile">
 
 <button onclick="downloadTemplate()">⬇ Download CSV Template</button>
-<button id="inventoryBtn" onclick="uploadInventory()">Analyze Inventory</button>
+<button onclick="uploadInventory()">Analyze Inventory</button>
 <button onclick="downloadCSV()">⬇ Download Results</button>
 
 <div id="inventoryLoader" class="loader hidden">⏳ Processing...</div>
@@ -208,35 +172,41 @@ td, th {
 </div>
 </div>
 
+<!-- ABOUT -->
 <div id="about" class="page hidden">
 <div class="card">
 <h2>About DealerNexus AI</h2>
-<p>DealerNexus AI is an advanced analytics platform designed for automotive dealers and resellers. It uses machine learning models trained on vehicle market data to predict resale value, profit potential, and selling speed.</p>
-<p>Our goal is to eliminate guesswork in vehicle purchasing decisions and empower dealers with real-time intelligence.</p>
+<p>DealerNexus AI is a data-driven intelligence platform designed for automotive dealers, traders, and resellers.</p>
+<p>Our system leverages machine learning models trained on real-world vehicle data to predict resale value, profitability, and market performance.</p>
+<p>We aim to eliminate guesswork and empower decision-making with accurate, actionable insights.</p>
 </div>
 </div>
 
+<!-- CONTACT -->
 <div id="contact" class="page hidden">
 <div class="card">
 <h2>Contact</h2>
-<p>Email: promisetnkomo@gmail.com</p>
-<p>Phone: +27623268794</p>
+<p><b>Email:</b> promisetnkomo@gmail.com</p>
+<p><b>Phone:</b> +27 62 326 8794</p>
+<p><b>Support Hours:</b> Mon–Sat, 8AM–6PM</p>
 </div>
 </div>
 
+<!-- DISCLAIMER -->
 <div id="disclaimer" class="page hidden">
 <div class="card">
 <h2>Disclaimer</h2>
-<p>DealerNexus AI provides predictions based on historical and statistical data. Results are estimates and should not be considered financial advice.</p>
-<p>Users are responsible for their own business decisions. DealerNexus AI is not liable for losses or decisions made based on system outputs.</p>
+<p>DealerNexus AI provides predictive insights based on statistical models and historical data.</p>
+<p>All outputs are estimates and should not be interpreted as guaranteed financial outcomes.</p>
+<p>Users are solely responsible for business decisions made using this platform.</p>
 </div>
 </div>
 
 </div>
 
 <script>
-const API = "http://127.0.0.1:8000";
-let inventoryResults = [];
+const API = "https://dealer-ai-api-2.onrender.com";
+let inventoryResults=[];
 
 /* NAV */
 function toggleMenu(){ sidebar.classList.toggle("active"); }
@@ -246,9 +216,54 @@ function showPage(p){
 }
 
 /* AUTH */
-function getToken(){ return localStorage.getItem("token"); }
 function setToken(t){ localStorage.setItem("token", t); }
+function getToken(){ return localStorage.getItem("token"); }
 function logout(){ localStorage.removeItem("token"); showPage('landing'); }
+
+async function signup(){
+    authResult.innerHTML="⏳ Creating account...";
+    try{
+        const res=await fetch(API+"/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.value,password:password.value})});
+        const r=await res.json();
+        authResult.innerHTML=r.message||r.detail;
+    }catch{
+        authResult.innerHTML="Server error";
+    }
+}
+
+async function login(){
+    authResult.innerHTML="⏳ Logging in...";
+    try{
+        const res=await fetch(API+"/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.value,password:password.value})});
+
+        if(!res.ok){
+            const err=await res.json();
+            authResult.innerHTML=err.detail||"Login failed";
+            return;
+        }
+
+        const r=await res.json();
+
+        if(r.token){
+            setToken(r.token);
+            showPage('dashboard');
+            loadUser();
+        }else{
+            authResult.innerHTML="Invalid credentials";
+        }
+    }catch{
+        authResult.innerHTML="Server unreachable";
+    }
+}
+
+async function loadUser(){
+    const res=await fetch(API+"/me?token="+getToken());
+    const data=await res.json();
+
+    userPlan.innerText=data.plan;
+    userUsage.innerText=data.usage;
+    userExpiry.innerText=data.expiry||"N/A";
+}
 
 /* TEMPLATE */
 function downloadTemplate(){
@@ -263,9 +278,8 @@ function downloadTemplate(){
 /* ANALYZE */
 async function analyze(){
     analyzeLoader.classList.remove("hidden");
-    analyzeBtn.disabled=true;
 
-    const res = await fetch(API+"/analyze?token="+getToken(),{
+    const res=await fetch(API+"/analyze?token="+getToken(),{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
@@ -281,99 +295,49 @@ async function analyze(){
         })
     });
 
-    const r = await res.json();
-
+    const r=await res.json();
     analyzeLoader.classList.add("hidden");
-    analyzeBtn.disabled=false;
 
-    let signal = r.profit > 0 ? "BUY" : "AVOID";
-
-    result.innerHTML = `Profit: R ${r.profit}<br>Signal: <b class="${r.profit>0?'signal-buy':'signal-avoid'}">${signal}</b>`;
+    result.innerHTML="Profit: R "+r.profit;
 }
 
-/* INVENTORY FIXED */
+/* INVENTORY */
 async function uploadInventory(){
-
     inventoryLoader.classList.remove("hidden");
-    inventoryBtn.disabled=true;
 
-    const file = csvFile.files[0];
+    const file=csvFile.files[0];
     if(!file){ alert("Upload CSV"); return; }
 
-    const text = await file.text();
-    const rows = text.split("\n").map(r=>r.split(","));
-    const headers = rows[0].map(h=>h.trim().toLowerCase());
+    const text=await file.text();
+    const rows=text.split("\n").map(r=>r.split(","));
+    const headers=rows[0];
 
-    const map = {
-        make:"manufacturer",
-        brand:"manufacturer",
-        mileage:"odometer"
-    };
-
-    let clean=[];
-
-    rows.slice(1).forEach(r=>{
+    let data=rows.slice(1).map(r=>{
         let obj={};
-
-        headers.forEach((h,i)=>{
-            let key = map[h] || h;
-            obj[key]=r[i]?.trim();
-        });
-
-        let year=Number(obj.year);
-        let odometer=Number(obj.odometer);
-        let price=Number(obj.price);
-
-        if(!year||!odometer||!price) return;
-
-        clean.push({
-            manufacturer:obj.manufacturer||"",
-            condition:obj.condition||"",
-            fuel:obj.fuel||"",
-            transmission:obj.transmission||"",
-            drive:obj.drive||"",
-            type:obj.type||"",
-            year,odometer,price
-        });
+        headers.forEach((h,i)=>obj[h.trim()]=r[i]);
+        obj.year=Number(obj.year);
+        obj.odometer=Number(obj.odometer);
+        obj.price=Number(obj.price);
+        return obj;
     });
 
-    const res = await fetch(API+"/inventory?token="+getToken(),{
+    const res=await fetch(API+"/inventory?token="+getToken(),{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(clean)
+        body:JSON.stringify(data)
     });
 
-    const result = await res.json();
-
+    const result=await res.json();
     inventoryLoader.classList.add("hidden");
-    inventoryBtn.disabled=false;
 
     inventoryResults=result;
-
-    let table="<table><tr>";
-    Object.keys(result[0]).forEach(k=>table+=`<th>${k}</th>`);
-    table+="<th>Signal</th></tr>";
-
-    result.forEach(r=>{
-        let signal=r.profit>0?"BUY":"AVOID";
-        table+=`<tr class="${r.profit>0?'profit-positive':'profit-negative'}">`;
-
-        Object.values(r).forEach(v=>table+=`<td>${v}</td>`);
-
-        table+=`<td class="${r.profit>0?'signal-buy':'signal-avoid'}">${signal}</td></tr>`;
-    });
-
-    inventoryResult.innerHTML=table;
+    inventoryResult.innerHTML=JSON.stringify(result,null,2);
 }
 
-/* DOWNLOAD */
+/* DOWNLOAD RESULTS */
 function downloadCSV(){
-    let csv=Object.keys(inventoryResults[0]).join(",")+",signal\n";
-
-    inventoryResults.forEach(r=>{
-        let signal=r.profit>0?"BUY":"AVOID";
-        csv+=Object.values(r).join(",")+","+signal+"\n";
-    });
+    let csv=Object.keys(inventoryResults[0]).join(",")+"\n";
+    inventoryResults.forEach(r=>csv+=Object.values(r).join(",")+"\n");
 
     let blob=new Blob([csv]);
     let a=document.createElement("a");
