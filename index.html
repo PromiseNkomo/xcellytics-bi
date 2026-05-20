@@ -120,6 +120,10 @@ button:hover {
     background:#ef4444;
 }
 
+.upgrade-btn{
+    background:linear-gradient(90deg,#25D366,#128C7E);
+}
+
 table {
     width:100%;
     border-collapse:collapse;
@@ -186,11 +190,30 @@ th {
 <!-- DASHBOARD -->
 <div id="dashboard" class="page hidden">
 <div class="card">
+
 <h2>Dashboard</h2>
 
 <p><b>Plan:</b> <span id="userPlan"></span></p>
 <p><b>Usage:</b> <span id="userUsage"></span></p>
 <p><b>Expiry:</b> <span id="userExpiry"></span></p>
+
+<hr style="margin:20px 0;border-color:#334155;">
+
+<h3>Upgrade To Pro</h3>
+
+<p>
+Unlock unlimited vehicle analyses, inventory uploads,
+and premium dealership intelligence tools.
+</p>
+
+<p>
+<b>Price:</b> R1999/month
+</p>
+
+<button class="upgrade-btn" onclick="upgradeWhatsApp()">
+💬 Upgrade Via WhatsApp
+</button>
+
 </div>
 </div>
 
@@ -329,6 +352,30 @@ function showPage(p){
         .classList.remove('hidden');
 }
 
+/* WHATSAPP UPGRADE */
+
+function upgradeWhatsApp(){
+
+    const userEmail = document.getElementById("email").value || "No email provided";
+
+    const message =
+`Hello DealerNexus AI,
+
+I would like to upgrade to the PRO plan.
+
+My account email is:
+${userEmail}
+
+Please activate my premium access.`;
+
+    const phone = "27623268794";
+
+    const url =
+`https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+    window.open(url, "_blank");
+}
+
 /* AUTH */
 
 function setToken(t){
@@ -428,7 +475,7 @@ async function loadUser(){
     const data = await res.json();
 
     userPlan.innerText = data.plan;
-    userUsage.innerText = data.usage;
+    userUsage.innerText = data.usage + " / 5 Free Analyses";
     userExpiry.innerText = data.expiry || "N/A";
 }
 
@@ -672,8 +719,6 @@ async function uploadInventory(){
         inventoryResult.innerHTML = "❌ Server error";
     }
 }
-
-/* DOWNLOAD RESULTS */
 
 function downloadCSV(){
 
