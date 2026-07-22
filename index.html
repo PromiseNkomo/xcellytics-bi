@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DealerNexus AI</title>
+<title>DealerNexus AI - Professional Analytics</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body {
     font-family:'Inter', sans-serif;
@@ -264,6 +264,23 @@ and premium dealership intelligence tools.
 
 <div id="inventoryResult" class="result"></div>
 
+<div class="card" style="margin-top:20px;">
+
+    <h3>Inventory Analytics</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:15px 0;">
+<div style="background:#0f172a;padding:14px;border-radius:10px;"><b>Total Vehicles</b><div id="kpiVehicles">-</div></div>
+<div style="background:#0f172a;padding:14px;border-radius:10px;"><b>Total Profit</b><div id="kpiProfit">-</div></div>
+<div style="background:#0f172a;padding:14px;border-radius:10px;"><b>BUY Signals</b><div id="kpiBuy">-</div></div>
+</div>
+
+    <div id="inventorySummary"></div>
+
+    <canvas id="profitChart" style="margin-top:20px;"></canvas>
+
+    <canvas id="signalChart" style="margin-top:20px;"></canvas>
+
+</div>
+
 </div>
 </div>
 
@@ -299,8 +316,8 @@ through accurate, data-driven insights.
 <h2>Contact</h2>
 
 <p><b>Email:</b> promisetnkomo@gmail.com</p>
-<p><b>Phone:</b> +27 62 326 8794</p>
-<p><b>Support Hours:</b> Mon - Sat | 08:00 - 18:00</p>
+<p><b>Phone:</b> +27 64 326 8794</p>
+<p><b>Support Hours:</b> Sun - Sat | 08:00 - 18:00</p>
 
 </div>
 </div>
@@ -336,6 +353,8 @@ made using this platform.
 const API = "https://dealer-ai-api-2.onrender.com";
 
 let inventoryResults = [];
+let profitChart = null;
+let signalChart = null;
 
 /* NAVIGATION */
 
@@ -368,7 +387,7 @@ ${userEmail}
 
 Please activate my premium access.`;
 
-    const phone = "27623268794";
+    const phone = "27643268794";
 
     const url =
 `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -711,6 +730,7 @@ async function uploadInventory(){
         html += `</table>`;
 
         inventoryResult.innerHTML = html;
+        renderInventoryCharts();
 
     }catch{
 
@@ -720,6 +740,68 @@ async function uploadInventory(){
     }
 }
 
+function renderInventoryCharts(){
+
+    const totalVehicles = inventoryResults.length;
+
+    const totalProfit = inventoryResults.reduce(
+        (sum,v)=>sum + Number(v.profit || 0),0
+    );
+
+    const buyCount = inventoryResults.filter(
+        v => v.signal === "BUY"
+    ).length;
+
+    const avoidCount = inventoryResults.filter(
+        v => v.signal === "AVOID"
+    ).length;
+
+    document.getElementById("inventorySummary").innerHTML = `
+        <p><b>Total Vehicles:</b> ${totalVehicles}</p>
+        <p><b>Total Expected Profit:</b> R ${totalProfit.toFixed(2)}</p>
+        <p><b>BUY Signals:</b> ${buyCount}</p>
+        <p><b>AVOID Signals:</b> ${avoidCount}</p>
+    `;
+
+    if(profitChart){
+        profitChart.destroy();
+    }
+
+    if(signalChart){
+        signalChart.destroy();
+    }
+
+    profitChart = new Chart(
+        document.getElementById("profitChart"),
+        {
+            type:"bar",
+            data:{
+                labels:inventoryResults.map(
+                    v => v.manufacturer + " " + v.year
+                ),
+                datasets:[{
+                    label:"Expected Profit",
+                    data:inventoryResults.map(v=>v.profit)
+                }]
+            }
+        }
+    );
+
+    signalChart = new Chart(
+        document.getElementById("signalChart"),
+        {
+            type:"pie",
+            data:{
+                labels:["BUY","AVOID"],
+                datasets:[{
+                    data:[buyCount,avoidCount]
+                }]
+            }
+        }
+    );
+}
+
+    
 function downloadCSV(){
 
     if(inventoryResults.length === 0){
@@ -753,4 +835,4 @@ window.onload = ()=>showPage('landing');
 </script>
 
 </body>
-</html>
+</html><!-- Version2 placeholder -->
