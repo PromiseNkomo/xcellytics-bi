@@ -521,8 +521,7 @@ export default function BulkUpload() {
           boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
           display: "flex",
           gap: 15,
-          alignItems: "center",
-          gap: 15,  
+          alignItems: "center", 
           flexWrap: "wrap",  
         }}
       >

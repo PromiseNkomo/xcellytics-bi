@@ -1199,6 +1199,7 @@ const Expenses = () => {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exchaustive-deps  
   }, []);
 
   const submit = async (e) => {
