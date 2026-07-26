@@ -1,4 +1,4 @@
-const API = "http://127.0.0.1:8000";
+const API = "https://xcellytics-bi.onrender.com";
 
 const safe = async (url, opt = {}) => {
 
