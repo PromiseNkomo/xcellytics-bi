@@ -5,6 +5,7 @@ pandas
 openpyxl
 python-multipart
 pydantic
+pytz
 python-dateutil
 passlib
 python-dotenv
