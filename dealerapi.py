@@ -222,17 +222,40 @@ def load_models():
 
     global price_model, speed_model, model_columns
 
-    if price_model is None:
+    try:
 
-        download_file(PRICE_MODEL_ID, "car_price_model.pkl")
-        download_file(SPEED_MODEL_ID, "speed_model.pkl")
-        download_file(COLUMNS_MODEL_ID, "model_columns.pkl")
+        if price_model is None:
 
-        price_model = joblib.load("car_price_model.pkl")
-        speed_model = joblib.load("speed_model.pkl")
-        model_columns = joblib.load("model_columns.pkl")
+            print("=== DEALERNEXUS MODEL LOADING START ===")
 
-    return price_model, speed_model, model_columns
+            print("Downloading/loading price model...")
+            download_file(PRICE_MODEL_ID, "car_price_model.pkl")
+
+            print("Downloading/loading speed model...")
+            download_file(SPEED_MODEL_ID, "speed_model.pkl")
+
+            print("Downloading/loading model columns...")
+            download_file(COLUMNS_MODEL_ID, "model_columns.pkl")
+
+            print("Loading car_price_model.pkl...")
+            price_model = joblib.load("car_price_model.pkl")
+
+            print("Loading speed_model.pkl...")
+            speed_model = joblib.load("speed_model.pkl")
+
+            print("Loading model_columns.pkl...")
+            model_columns = joblib.load("model_columns.pkl")
+
+            print("=== ALL MODELS LOADED SUCCESSFULLY ===")
+
+        return price_model, speed_model, model_columns
+
+    except Exception as e:
+
+        print("=== DEALERNEXUS MODEL LOADING ERROR ===")
+        print(type(e).__name__)
+        print(str(e))
+        raise
 
 def build_price_features(df, model_columns):
 
