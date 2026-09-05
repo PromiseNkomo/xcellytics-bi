@@ -196,23 +196,30 @@ COLUMNS_MODEL_ID = "1juBiA4Zaoh6FLrbMayZYVaxY63CjHLQ8"
 
 def download_file(file_id, filename):
 
-    if os.path.exists(filename):
-        return
-
     URL = "https://drive.google.com/uc?export=download"
 
-    session = requests.Session()
-
-    response = session.get(
+    response = requests.get(
         URL,
         params={"id": file_id},
-        stream=True
+        stream=True,
+        timeout=60
     )
 
-    with open(filename, "wb") as f:
+    response.raise_for_status()
+
+    temp_filename = filename + ".tmp"
+
+    with open(temp_filename, "wb") as f:
         for chunk in response.iter_content(8192):
             if chunk:
                 f.write(chunk)
+
+    os.replace(temp_filename, filename)
+
+    print(
+        f"Downloaded {filename}: "
+        f"{os.path.getsize(filename)} bytes"
+    )
 
 price_model = None
 speed_model = None
@@ -224,7 +231,7 @@ def load_models():
 
     try:
 
-        if price_model is None:
+        if price_model is None or speed_model is None or model_columns is None:
 
             print("=== DEALERNEXUS MODEL LOADING START ===")
 
@@ -397,3 +404,7 @@ def analyze_inventory(data: List[Vehicle], token: str):
             continue
 
     return results
+
+
+
+
