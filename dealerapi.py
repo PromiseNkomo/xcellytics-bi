@@ -26,6 +26,29 @@ app.add_middleware(
 def root():
     return {"status": "API is running"}
 
+
+@app.get("/debug-environment")
+def debug_environment():
+    import sys
+    import sklearn
+    import joblib
+    import numpy
+    import scipy
+    import pandas
+
+    return {
+        "python": sys.version,
+        "sklearn": sklearn.__version__,
+        "joblib": joblib.__version__,
+        "numpy": numpy.__version__,
+        "scipy": scipy.__version__,
+        "pandas": pandas.__version__,
+        "sklearn_loss_exists": os.path.exists(
+            os.path.join(os.path.dirname(sklearn.__file__), "_loss")
+        )
+    }
+
+
 EXCHANGE_RATE = 18
 FREE_LIMIT = 5
 
