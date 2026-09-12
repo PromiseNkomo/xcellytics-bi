@@ -52,6 +52,29 @@ def debug_environment():
 EXCHANGE_RATE = 18
 FREE_LIMIT = 5
 
+@app.get("/debug-model")
+def debug_model():
+    import hashlib
+    import os
+
+    filename = "car_price_model.pkl"
+
+    if not os.path.exists(filename):
+        return {
+            "exists": False,
+            "message": "Model file does not exist yet."
+        }
+
+    with open(filename, "rb") as f:
+        file_hash = hashlib.sha256(f.read()).hexdigest()
+
+    return {
+        "exists": True,
+        "filename": filename,
+        "size_bytes": os.path.getsize(filename),
+        "sha256": file_hash
+    }
+
 # DATABASE
 conn = sqlite3.connect("dealer.db", check_same_thread=False)
 cursor = conn.cursor()
